@@ -24,11 +24,11 @@ public class ZKConnection {
 		zoo = new ZooKeeper(host, 10000, new Watcher() {
 			public void process(WatchedEvent we) {
 				if (we.getState() == KeeperState.SyncConnected) {
-					connectionLatch.countDown();
+					//connectionLatch.countDown();
 				}
 			}
 		});
-		connectionLatch.await();
+		//connectionLatch.await();
 		return zoo;
 	}
 	

@@ -12,6 +12,7 @@ import java.util.Timer;
 
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
+import org.apache.commons.lang3.StringUtils;
 
 import Zookeeper.ZKManager;
 
@@ -26,6 +27,7 @@ public class Source {
 	private int id;
 	private String ip;
 	private int port;
+	private String caminho;
 	
 	public Source() {
 		initSourceNode();
@@ -41,23 +43,32 @@ public class Source {
 			zoo = new ZKManager();
 			
 			//checks if the source folder exists
-			Stat s = zoo.znode_exists(SOURCE_FOLDER_PATHNAME, false);
+			Stat s = zoo.znode_exists("/" + SOURCE_FOLDER_PATHNAME, false);
+			
 			//if not, creates one
 			if(s == null) {
 				zoo.createGroup(SOURCE_FOLDER_PATHNAME, false);
 			}
-			
+
 			this.ip = InetAddress.getLocalHost().getHostAddress();
-			this.port = 0;
+			this.port = 34000;
 			
 			byte[] data = (ip+":"+port).getBytes();
+			
 			//joins source folder 
-			zoo.joinGroup(SOURCE_FOLDER_PATHNAME, SOURCE_NODE_PATHNAME, data, false);
-			
+			this.caminho = zoo.joinGroup(SOURCE_FOLDER_PATHNAME, SOURCE_NODE_PATHNAME, data, false, true);
+			System.out.println(caminho);
 			//creates its own folder for network management
-			this.id = zoo.listGroupChildren(SOURCE_FOLDER_PATHNAME).size();
-			zoo.createGroup(SOURCE_NODE_PATHNAME + id, true);
+			this.id = getServiceNumberFromPath(caminho);
 			
+			if(zoo.znode_exists(SOURCE_NODE_PATHNAME + id, false) == null){
+				
+				zoo.createGroup(SOURCE_NODE_PATHNAME + id, true);
+			}else{
+				resetSource(SOURCE_NODE_PATHNAME + id);
+				zoo.createGroup(SOURCE_NODE_PATHNAME + id, true);
+			}
+		
 		} catch (IOException | InterruptedException | KeeperException e) {
 			
 			e.printStackTrace();
@@ -70,17 +81,24 @@ public class Source {
 			int frame = 0;
 			
 			while(true) {
-				String msg = "Source Node:"+id+" frame nº:"+frame;
+				String msg = "Source Node:"+id+" frame nï¿½:"+frame;
 				 byte[] data = msg.getBytes();
 				 DatagramPacket pack = new DatagramPacket(data, data.length);
-				 for (String child : view) {
-					String[] member = child.split("/");
-					String[] info = member[member.length-1].split(":");
-					InetAddress add = InetAddress.getByName(info[0]);
-					pack.setAddress(add);
-					pack.setPort(Integer.valueOf(info[1]));
-					socket.send(pack);
-				}
+				 
+				 if (view != null) {
+					 for (String child : view) {
+							String[] member = child.split("/");
+							String[] info = member[member.length-1].split(":");
+							InetAddress add = InetAddress.getByName(info[0]);
+							pack.setAddress(add);
+							pack.setPort(Integer.valueOf(info[1]));
+							try{
+								socket.send(pack);
+							}catch(IOException e){
+								continue;
+							}
+					 }
+				 }
 			}
 
 		} catch (IOException e) {
@@ -95,5 +113,18 @@ public class Source {
 
 	public void updateClientData(List<String> clientData) {
 		view = new ArrayList<>(clientData);
+	}
+	
+	private void resetSource(String group){
+		try {
+			zoo.reset(group);
+		} catch (KeeperException | InterruptedException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	public static int getServiceNumberFromPath(String path) {
+		String numberStg = StringUtils.substringAfterLast(path,(SOURCE_NODE_PATHNAME + "-"));
+		return Integer.parseInt(numberStg) + 1;
 	}
 }
