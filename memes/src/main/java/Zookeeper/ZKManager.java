@@ -25,7 +25,7 @@ public class ZKManager {
 
 	private void initialize() throws IOException, InterruptedException, KeeperException {
 		zkConnection = new ZKConnection();
-		zkeeper = zkConnection.connect("127.0.0.1");
+		zkeeper = zkConnection.connect("10.101.148.17");
 	}
 
 	public ZKManager(Watcher watcher) throws IOException, InterruptedException, KeeperException {
@@ -81,7 +81,7 @@ public class ZKManager {
 		String path = "/" + groupName + "/" + memberName + "-";
 		Stat status = znode_exists(path, watchFlag);
 		
-		if (status != null) {
+		if (status == null) {
 			if (listGroupChildren(groupName).size() < 3) {
 				return zkeeper.create(path, data, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
 			}
@@ -92,7 +92,7 @@ public class ZKManager {
 		}
 		
 		
-		return "";
+		return "Erro!";
 		// in real world would probably be persistent but for the sake of simplicty here
 		// its epheremeral
 	}

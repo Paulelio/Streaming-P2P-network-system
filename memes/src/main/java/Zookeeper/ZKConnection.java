@@ -28,7 +28,7 @@ public class ZKConnection {
 				}
 			}
 		});
-		connectionLatch.await();
+		//connectionLatch.await();
 		return zoo;
 	}
 	

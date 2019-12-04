@@ -4,14 +4,13 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
-import java.net.SocketException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 import java.util.Scanner;
 
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.data.Stat;
 
 import Server.Source;
 import Zookeeper.ZKManager;
@@ -34,8 +33,9 @@ public class Client {
 	private int currFrame;
 
 	private byte[] data = new byte[256];
-
+	
 	public Client() {
+		path = new ArrayList<>();
 		initClientNode();
 		receivePackets();
 	}
@@ -74,8 +74,9 @@ public class Client {
 			byte[] data = (ip+":"+port).getBytes();
 			String ogPath = Source.SOURCE_NODE_PATHNAME + sourceId;
 			String joinGroupResponse = zoo.joinGroup( ogPath, "client" + id, data, true);
+			System.out.println("memes" + joinGroupResponse);
 			
-			if (joinGroupResponse.split(":")[0] != "Full") {
+			if (!joinGroupResponse.contains(":")) {
 				path.add(joinGroupResponse);
 			}
 			
@@ -134,14 +135,14 @@ public class Client {
 				String msg = new String(rPack.getData(), 0, rPack.getLength());
 				System.out.println(msg);
 
-				if(zoo.listGroupChildren(path + "/client"+id).size() > 0) {
-					byte[] sendData = msg.getBytes();
-
-					DatagramPacket sPack = new DatagramPacket(sendData,sendData.length);
-				}
+//				if(zoo.listGroupChildren(path + "/client"+id).size() > 0) {
+//					byte[] sendData = msg.getBytes();
+//
+//					DatagramPacket sPack = new DatagramPacket(sendData,sendData.length);
+//				}
 			}
 
-		} catch (IOException | KeeperException e) {
+		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
