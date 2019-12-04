@@ -67,13 +67,15 @@ public class Client {
 					correct = true;
 				}
 				else {
-					System.out.println("Introuza um número válido");
+					System.out.println("Introuza um nï¿½mero vï¿½lido");
 				}
 			}
 			
 			byte[] data = (ip+":"+port).getBytes();
 			String ogPath = Source.SOURCE_NODE_PATHNAME + sourceId;
-			String joinGroupResponse = zoo.joinGroup( ogPath, "client" + id, data, true);
+
+			
+			String joinGroupResponse = zoo.joinGroup( ogPath, "client" + id, data, true, false);
 			System.out.println("memes" + joinGroupResponse);
 			
 			if (!joinGroupResponse.contains(":")) {
@@ -92,7 +94,7 @@ public class Client {
 					int rand = r.nextInt(possibleParents.size());
 					String group = possibleParents.get(rand);
 					
-					String joinSourceChildrenResponse = zoo.joinGroup(group, "client" + id, data, true);
+					String joinSourceChildrenResponse = zoo.joinGroup(group, "client" + id, data, true, false);
 										
 					if (joinSourceChildrenResponse.split(":")[0] != "Full") {
 						path.add(joinGroupResponse);
