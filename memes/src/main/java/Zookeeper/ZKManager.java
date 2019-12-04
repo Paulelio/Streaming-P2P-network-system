@@ -80,7 +80,19 @@ public class ZKManager {
 	public String joinGroup(String groupName, String memberName, byte[] data, boolean watchFlag) throws KeeperException, InterruptedException {
 		String path = "/" + groupName + "/" + memberName + "-";
 		Stat status = znode_exists(path, watchFlag);
-		return status != null ? "" : zkeeper.create(path, data, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL_SEQUENTIAL);
+		
+		if (status != null) {
+			if (listGroupChildren(groupName).size() < 3) {
+				return zkeeper.create(path, data, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+			}
+			
+			else {
+				return "Full:" + listGroupChildren(groupName).toString();
+			}
+		}
+		
+		
+		return "";
 		// in real world would probably be persistent but for the sake of simplicty here
 		// its epheremeral
 	}
