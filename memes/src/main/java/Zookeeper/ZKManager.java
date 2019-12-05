@@ -127,7 +127,7 @@ public class ZKManager {
 	public void reset(String group) throws KeeperException, InterruptedException {
 		List<String> children = listGroupChildren(group);
 		
-		if(children.size() > 0){
+		if(children != null && children.size() > 0){
 			
 			for (String string : children) {
 				

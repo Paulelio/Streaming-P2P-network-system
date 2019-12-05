@@ -8,16 +8,19 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.Scanner;
+import java.util.Timer;
 
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 
 import Server.Source;
+import Server.VerifyTask;
 import Zookeeper.ZKManager;
 
 public class Client {
 	private List<String> path;
-
+	private List<String> view;
+	
 	private ZKManager zoo;
 
 	private int id;
@@ -31,12 +34,16 @@ public class Client {
 	private Scanner scan;
 
 	private int currFrame;
+	private int[] frames = new int[5];
 
 	private byte[] data = new byte[256];
 	
 	public Client() {
 		path = new ArrayList<>();
 		initClientNode();
+		Timer t = new Timer();
+		VerifyClient v = new VerifyClient(this);
+		t.schedule(v, 10000);
 		receivePackets();
 	}
 
@@ -137,18 +144,39 @@ public class Client {
 				String msg = new String(rPack.getData(), 0, rPack.getLength());
 				System.out.println(msg);
 
-//				if(zoo.listGroupChildren(path + "/client"+id).size() > 0) {
-//					byte[] sendData = msg.getBytes();
-//
-//					DatagramPacket sPack = new DatagramPacket(sendData,sendData.length);
-//				}
+				byte[] data = msg.getBytes();
+				DatagramPacket sPack = new DatagramPacket(data, data.length);
+				
+				if(view != null) {
+					for (String child : view) {
+						String[] member = child.split("/");
+						String[] info = member[member.length-1].split(":");
+						InetAddress add = InetAddress.getByName(info[0]);
+						sPack.setAddress(add);
+						sPack.setPort(Integer.valueOf(info[1]));
+						try {
+							socket.send(sPack);
+						}catch(IOException e) {
+							continue;
+						}
+					}
+				}
+				
 			}
 
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 
+	}
+	
+	public List<String> getPath(){
+		return path;
+	}
+
+	public void updateClientData(List<String> clientData) {
+		view = new ArrayList<>(clientData);
+		
 	}
 
 }
