@@ -10,6 +10,7 @@ import java.util.Random;
 import java.util.Scanner;
 import java.util.Timer;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 
@@ -57,33 +58,35 @@ public class Client {
 			scan = new Scanner(System.in);
 
 			this.ip = InetAddress.getLocalHost().getHostAddress();
-			this.port = 0;
+			this.port = 4000;
 
 			sourceNodes = zoo.listGroupChildren(Source.SOURCE_FOLDER_PATHNAME);
 			int nSources = sourceNodes.size();
 
-			System.out.print("Escolha a live que deseja ver:");
-			for (int i = 1; i <= nSources; i++) {
-				System.out.print(i+" ");
+			System.out.println("Escolha a live que deseja ver: ");
+			for (String s : sourceNodes) {
+				System.out.print(s+" ");
 			}
+			
 			System.out.println("");
 			boolean correct = false;
 			while(!correct) {
 				sourceId = scan.nextInt();
+				
 				if (sourceId <= nSources && sourceId > 0) {
 					correct = true;
 				}
+				
 				else {
-					System.out.println("Introuza um n�mero v�lido");
+					System.out.println("Introduza um numero valido");
 				}
 			}
 			
 			byte[] data = (ip+":"+port).getBytes();
-			String ogPath = Source.SOURCE_NODE_PATHNAME + sourceId;
+			String ogPath = "source"+getServiceNumberFromPath(sourceNodes.get(--sourceId));
 
 			
 			String joinGroupResponse = zoo.joinGroup( ogPath, "client" + id, data, true, false);
-			System.out.println("memes" + joinGroupResponse);
 			
 			if (!joinGroupResponse.contains(":")) {
 				path.add(joinGroupResponse);
@@ -134,13 +137,15 @@ public class Client {
 	}
 	
 	private void receivePackets() {
+		
 		try {
-
-			socket = new DatagramSocket();
+			
+			socket = new DatagramSocket(4000);
 			while(true) {
+				
 				DatagramPacket rPack = new DatagramPacket(data, data.length);
 				socket.receive(rPack);
-
+				
 				String msg = new String(rPack.getData(), 0, rPack.getLength());
 				System.out.println(msg);
 
@@ -177,6 +182,11 @@ public class Client {
 	public void updateClientData(List<String> clientData) {
 		view = new ArrayList<>(clientData);
 		
+	}
+	
+	public static int getServiceNumberFromPath(String path) {
+		String numberStg = StringUtils.substringAfterLast(path,("source-"));
+		return Integer.parseInt(numberStg);
 	}
 
 }
