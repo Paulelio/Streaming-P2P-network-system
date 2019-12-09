@@ -27,9 +27,11 @@ public class Source {
 	private int port;
 	private String caminho;
 	
+	private Timer t;
+	
 	public Source() {
 		initSourceNode();
-		Timer t = new Timer();
+		t = new Timer();
 		VerifyTask v = new VerifyTask(this);
 		t.schedule(v, 10000);
 		broadcastPackets();
@@ -45,11 +47,12 @@ public class Source {
 			
 			//if not, creates one
 			if(s == null) {
+				
 				zoo.createGroup(SOURCE_FOLDER_PATHNAME, false);
 			}
-
+			
 			this.ip = InetAddress.getLocalHost().getHostAddress();
-			this.port = 34000;
+			this.port = 4000;
 			
 			byte[] data = (ip+":"+port).getBytes();
 			
@@ -59,10 +62,10 @@ public class Source {
 			//creates its own folder for network management
 			this.id = getServiceNumberFromPath(caminho);
 			
-			if(zoo.znode_exists(SOURCE_NODE_PATHNAME + id, false) == null){
-				
+			if(zoo.znode_exists("/"+ SOURCE_NODE_PATHNAME + id, false) == null){	
 				zoo.createGroup(SOURCE_NODE_PATHNAME + id, true);
-			}else{
+			}
+			else{
 				resetSource(SOURCE_NODE_PATHNAME + id);
 				zoo.createGroup(SOURCE_NODE_PATHNAME + id, true);
 			}
@@ -79,11 +82,11 @@ public class Source {
 			int frame = 0;
 			
 			while(true) {
-				String msg = "Source Node:"+id+" frame n�:"+frame;
+				String msg = "Source Node:"+id+" frame num:"+frame;
 				 byte[] data = msg.getBytes();
 				 DatagramPacket pack = new DatagramPacket(data, data.length);
 				 
-				 if (view != null) {
+				 if (view != null && !view.isEmpty()) {
 					 for (String child : view) {
 							String[] member = child.split("/");
 							String[] info = member[member.length-1].split(":");
@@ -92,15 +95,18 @@ public class Source {
 							pack.setPort(Integer.valueOf(info[1]));
 							try{
 								socket.send(pack);
-							}catch(IOException e){
+							}
+							catch(IOException e){
+								System.out.println(e);
 								continue;
 							}
 					 }
 				 }
+				 frame++;
 			}
 
-		} catch (IOException e) {
-			
+		} 
+		catch (IOException e) {	
 			e.printStackTrace();
 		}
 	}
@@ -123,6 +129,13 @@ public class Source {
 	
 	public static int getServiceNumberFromPath(String path) {
 		String numberStg = StringUtils.substringAfterLast(path,(SOURCE_NODE_PATHNAME + "-"));
-		return Integer.parseInt(numberStg) + 1;
+		return Integer.parseInt(numberStg);
+	}
+	
+	public void resetTimer() {
+		t.cancel();
+		t = new Timer();
+		VerifyTask v = new VerifyTask(this);
+		t.schedule(v, 10000);
 	}
 }
