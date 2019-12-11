@@ -90,7 +90,13 @@ public class ZKManager {
 			}
 			
 			else {
-				return "Full:" + listGroupChildren(groupName).toString();
+				StringBuilder sb = new StringBuilder("Full:");
+				for (String b : listGroupChildren(groupName)) {
+					sb.append(b + ",");
+				
+				}
+				
+				return sb.toString();
 			}
 		}
 		

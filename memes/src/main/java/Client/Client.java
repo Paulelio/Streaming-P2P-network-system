@@ -5,6 +5,7 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import java.util.Scanner;
@@ -34,8 +35,8 @@ public class Client {
 	private List<String> sourceNodes;
 	private Scanner scan;
 
-	private int currFrame;
-	private int[] frames = new int[5];
+	private int lastFrame;
+	private ArrayList<Integer> frames;
 
 	private byte[] data = new byte[256];
 	
@@ -44,7 +45,7 @@ public class Client {
 		initClientNode();
 		Timer t = new Timer();
 		VerifyClient v = new VerifyClient(this);
-		t.schedule(v, 10000);
+		t.schedule(v, 5000);
 		receivePackets();
 	}
 
@@ -115,6 +116,8 @@ public class Client {
 					int rand = r.nextInt(possibleParents.size());
 					String group = possibleParents.get(rand);
 					
+					System.out.println(group);
+					
 					String joinSourceChildrenResponse = zoo.joinGroup(group, "client" + id, data, true, false);
 										
 					if (joinSourceChildrenResponse.split(":")[0] != "Full") {
@@ -132,13 +135,12 @@ public class Client {
 				}
 			}
 			
-			currFrame = 0;
+			lastFrame = 0;
+			frames = new ArrayList<>();
 
 		} catch (IOException | InterruptedException | KeeperException e) {
-			
 			e.printStackTrace();
 		}
-
 	}
 	
 	private static void updateList(String[] names, String initial, List<String> update){
@@ -156,11 +158,25 @@ public class Client {
 				socket.receive(rPack);
 				
 				String msg = new String(rPack.getData(), 0, rPack.getLength());
-				System.out.println(msg);
-
+				
+				int currentFrame = Integer.valueOf(msg.split(":")[2]);
+				
+				if (currentFrame == lastFrame+1) {
+					System.out.println(msg);					
+					lastFrame = currentFrame;
+				}
+				
+				if (frames.size() == 5)
+					frames.remove(0);
+				
+				frames.add(currentFrame);
+				
+				Collections.sort(frames);
+				
 				byte[] data = msg.getBytes();
 				DatagramPacket sPack = new DatagramPacket(data, data.length);
 				
+				System.out.println(view.toString());
 				if(view != null) {
 					for (String child : view) {
 						String[] member = child.split("/");

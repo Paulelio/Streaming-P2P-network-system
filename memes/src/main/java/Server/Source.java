@@ -33,7 +33,7 @@ public class Source {
 		initSourceNode();
 		t = new Timer();
 		VerifyTask v = new VerifyTask(this);
-		t.schedule(v, 10000);
+		t.schedule(v, 5000);
 		broadcastPackets();
 	}
 
@@ -88,7 +88,6 @@ public class Source {
 				 DatagramPacket pack = new DatagramPacket(data, data.length);
 				 
 				 if (view != null && !view.isEmpty()) {
-					 System.out.println(view.toString());
 					 for (String child : view) {
 							String[] member = child.split("/");
 							String[] info = member[member.length-1].split(":");
@@ -141,6 +140,6 @@ public class Source {
 		t.cancel();
 		t = new Timer();
 		VerifyTask v = new VerifyTask(this);
-		t.schedule(v, 10000);
+		t.schedule(v, 5000);
 	}
 }
