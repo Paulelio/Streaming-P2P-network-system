@@ -163,7 +163,7 @@ public class Client {
 				int currentFrame = Integer.valueOf(msg.split(":")[2]);
 				
 				if (firstFrame) {
-					firstFrame = False;
+					firstFrame = false;
 					System.out.println(msg);					
 					lastFrame = currentFrame;					
 				}
