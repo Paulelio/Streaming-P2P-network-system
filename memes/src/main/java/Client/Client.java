@@ -27,7 +27,7 @@ public class Client {
 	private int id;
 	private int sourceId;
 
-	private String ip;
+	private InetAddress ip;
 	private int port;
 
 	private DatagramSocket socket;
@@ -57,9 +57,20 @@ public class Client {
 			zoo = new ZKManager();
 			scan = new Scanner(System.in);
 
-			this.ip = InetAddress.getLocalHost().getHostAddress();
-			this.port = 4000;
+			//get local address
+			try(final DatagramSocket socket = new DatagramSocket()){
+				  socket.connect(InetAddress.getByName("8.8.8.8"), 10002);
+				  this.ip = InetAddress.getByName(socket.getLocalAddress().getHostAddress());
+			}
+			
+			//get port
+			Random rPort = new Random();
+			this.port = rPort.nextInt(400) + 4000;
 
+			System.out.println("IP - " + this.ip);
+			System.out.println("Port - " + this.port);
+			
+			//list sources
 			sourceNodes = zoo.listGroupChildren(Source.SOURCE_FOLDER_PATHNAME);
 			int nSources = sourceNodes.size();
 
@@ -86,7 +97,7 @@ public class Client {
 			String ogPath = "source"+getServiceNumberFromPath(sourceNodes.get(--sourceId));
 
 			
-			String joinGroupResponse = zoo.joinGroup( ogPath, "client" + id, data, true, false);
+			String joinGroupResponse = zoo.joinGroup(ogPath, "client" + this.port, data, true, false);
 			
 			if (!joinGroupResponse.contains(":")) {
 				path.add(joinGroupResponse);
@@ -137,12 +148,10 @@ public class Client {
 	}
 	
 	private void receivePackets() {
-		
 		try {
 			
-			socket = new DatagramSocket(4000);
+			socket = new DatagramSocket(this.port);
 			while(true) {
-				
 				DatagramPacket rPack = new DatagramPacket(data, data.length);
 				socket.receive(rPack);
 				
@@ -166,13 +175,11 @@ public class Client {
 						}
 					}
 				}
-				
 			}
 
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-
 	}
 	
 	public List<String> getPath(){

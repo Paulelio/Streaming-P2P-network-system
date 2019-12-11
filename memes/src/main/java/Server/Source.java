@@ -82,11 +82,13 @@ public class Source {
 			int frame = 0;
 			
 			while(true) {
+				Thread.sleep(50);
 				String msg = "Source Node:"+id+" frame num:"+frame;
 				 byte[] data = msg.getBytes();
 				 DatagramPacket pack = new DatagramPacket(data, data.length);
 				 
 				 if (view != null && !view.isEmpty()) {
+					 System.out.println(view.toString());
 					 for (String child : view) {
 							String[] member = child.split("/");
 							String[] info = member[member.length-1].split(":");
@@ -108,6 +110,9 @@ public class Source {
 		} 
 		catch (IOException e) {	
 			e.printStackTrace();
+		} 
+		catch (InterruptedException e1) {
+			e1.printStackTrace();
 		}
 	}
 

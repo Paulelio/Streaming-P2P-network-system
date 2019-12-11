@@ -21,7 +21,7 @@ public class ZKConnection {
 	 * @throws InterruptedException
 	 */
 	public ZooKeeper connect(String host) throws IOException, InterruptedException {
-		zoo = new ZooKeeper(host, 10000, new Watcher() {
+		zoo = new ZooKeeper(host, 5000, new Watcher() {
 			public void process(WatchedEvent we) {
 				if (we.getState() == KeeperState.SyncConnected) {
 					//connectionLatch.countDown();

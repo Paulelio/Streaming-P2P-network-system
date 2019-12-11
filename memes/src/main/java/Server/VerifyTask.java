@@ -15,7 +15,6 @@ public class VerifyTask extends TimerTask {
 	
 	public VerifyTask(Source source) {
 		this.sc = source;
-		
 	}
 
 	@Override
@@ -30,10 +29,11 @@ public class VerifyTask extends TimerTask {
 			for (String child : children) {
 				clientData.add((String) zoo.getZNodeData(sourceNodeName, child, null));
 			}
-			
 			sc.updateClientData(clientData);
-		} catch (IOException | InterruptedException | KeeperException e) {
+			sc.resetTimer();
 			
+		} catch (IOException | InterruptedException | KeeperException e) {
+			sc.resetTimer();
 			e.printStackTrace();
 		}
 		
