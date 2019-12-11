@@ -35,6 +35,7 @@ public class Client {
 	private List<String> sourceNodes;
 	private Scanner scan;
 
+	private boolean firstFrame = true;
 	private int lastFrame;
 	private ArrayList<Integer> frames;
 
@@ -161,6 +162,12 @@ public class Client {
 				
 				int currentFrame = Integer.valueOf(msg.split(":")[2]);
 				
+				if (firstFrame) {
+					firstFrame = False;
+					System.out.println(msg);					
+					lastFrame = currentFrame;					
+				}
+				
 				if (currentFrame == lastFrame+1) {
 					System.out.println(msg);					
 					lastFrame = currentFrame;
@@ -176,8 +183,8 @@ public class Client {
 				byte[] data = msg.getBytes();
 				DatagramPacket sPack = new DatagramPacket(data, data.length);
 				
-				System.out.println(view.toString());
 				if(view != null) {
+					System.out.println(view.toString());
 					for (String child : view) {
 						String[] member = child.split("/");
 						String[] info = member[member.length-1].split(":");
