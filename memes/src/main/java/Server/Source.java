@@ -6,6 +6,7 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 import java.util.Timer;
 
 import org.apache.zookeeper.KeeperException;
@@ -51,12 +52,13 @@ public class Source {
 			}
 			
 			this.ip = InetAddress.getLocalHost().getHostAddress();
-			this.port = 4000;
+			Random rPort = new Random();
+			this.port = rPort.nextInt(400) + 4000;;
 			
 			byte[] data = (ip+":"+port).getBytes();
 			
 			//joins source folder 
-			this.caminho = zoo.joinGroup(SOURCE_FOLDER_PATHNAME, SOURCE_NODE_PATHNAME, data, false, true);
+			this.caminho = zoo.joinGroup(SOURCE_FOLDER_PATHNAME, SOURCE_NODE_PATHNAME, data, false, true, true);
 			System.out.println(caminho);
 			//creates its own folder for network management
 			this.id = getServiceNumberFromPath(caminho);

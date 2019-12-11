@@ -100,7 +100,7 @@ public class Client {
 			String ogPath = "source"+getServiceNumberFromPath(sourceNodes.get(--sourceId));
 
 			
-			String joinGroupResponse = zoo.joinGroup(ogPath, "client" + this.port, data, true, false);
+			String joinGroupResponse = zoo.joinGroup(ogPath, "client" + this.port, data, true, false, false);
 			
 			if (!joinGroupResponse.contains(":")) {
 				path.add(joinGroupResponse);
@@ -118,7 +118,7 @@ public class Client {
 					int rand = r.nextInt(possibleParents.size());
 					String group = possibleParents.get(rand);
 					
-					String joinSourceChildrenResponse = zoo.joinGroup(group, "client" + id, data, true, false);
+					String joinSourceChildrenResponse = zoo.joinGroup(group, "client" + id, data, true, false, false);
 										
 					if (joinSourceChildrenResponse.split(":")[0] != "Full") {
 						path.add(group);
@@ -127,7 +127,6 @@ public class Client {
 					
 					else {
 						String[] children = joinSourceChildrenResponse.split(":")[1].split(",");
-
 						updateList(children, group, possibleParents);
 						
 					}

@@ -77,12 +77,12 @@ public class ZKManager {
 		return status != null ? "" : zkeeper.create(path, null /* data */, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
 	}
 	
-	public String joinGroup(String groupName, String memberName, byte[] data, boolean watchFlag, boolean ephemeral) throws KeeperException, InterruptedException {
+	public String joinGroup(String groupName, String memberName, byte[] data, boolean watchFlag, boolean ephemeral, boolean isSource) throws KeeperException, InterruptedException {
 		String path = "/" + groupName + "/" + memberName + "-";
 		Stat status = znode_exists(path, watchFlag);		
 		
 		if (status == null) {		
-			if (listGroupChildren(groupName).size() < 3) {
+			if (listGroupChildren(groupName).size() < 3 || isSource) {
 				if(ephemeral)
 					return zkeeper.create(path, data, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL_SEQUENTIAL);
 				else
