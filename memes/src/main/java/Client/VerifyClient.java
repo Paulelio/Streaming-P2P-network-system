@@ -22,26 +22,26 @@ public class VerifyClient extends TimerTask {
 	public void run() {
 		try {
 			this.zoo = new ZKManager();
-			List<String> clientPath = client.getPath();
-
-			int index = 0;
-			boolean encontrado = false;
-			String path = "";
+			List<String> sourceNodeNames = client.getPath();
+			List<String> allClientData = new ArrayList<>();
 			
-			while(index < clientPath.size() && !encontrado) {
-				if(clientPath.get(index) != null)
-					path = clientPath.get(index);	
+			for (String sourceName : sourceNodeNames) {
+				List<String> children = zoo.listGroupChildren(sourceName.substring(1));
+				
+				List<String> clientData = new ArrayList<>();
+				
+				for (String child : children) {
+					clientData.add((String) zoo.getZNodeData(sourceName.substring(1), child, null));
+				}
+				
+				allClientData.addAll(clientData);
 			}
 			
-			List<String> children = zoo.listGroupChildren(path);
-			List<String> clientData =  new ArrayList<>();
+			client.updateClientData(allClientData);
+			client.resetTimer();
 			
-			for (String string : children) {
-				clientData.add((String) zoo.getZNodeData(path, string, null));
-			}
-			
-			client.updateClientData(clientData);
-		}catch(IOException | InterruptedException | KeeperException e){
+		} catch (IOException | InterruptedException | KeeperException e) {
+			client.resetTimer();
 			e.printStackTrace();
 		}
 	}

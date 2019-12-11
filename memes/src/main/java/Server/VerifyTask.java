@@ -20,7 +20,6 @@ public class VerifyTask extends TimerTask {
 	@Override
 	public void run() {
 		try {
-			
 			this.zoo = new ZKManager();
 			String sourceNodeName = sc.SOURCE_NODE_PATHNAME+sc.getID();
 			List<String> children = zoo.listGroupChildren(sourceNodeName);

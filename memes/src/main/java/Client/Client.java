@@ -30,6 +30,8 @@ public class Client {
 
 	private InetAddress ip;
 	private int port;
+	
+	private Timer t;
 
 	private DatagramSocket socket;
 	private List<String> sourceNodes;
@@ -44,7 +46,7 @@ public class Client {
 	public Client() {
 		path = new ArrayList<>();
 		initClientNode();
-		Timer t = new Timer();
+		t = new Timer();
 		VerifyClient v = new VerifyClient(this);
 		t.schedule(v, 5000);
 		receivePackets();
@@ -54,7 +56,6 @@ public class Client {
 	 * 
 	 */
 	private void initClientNode() {
-
 		try {
 			zoo = new ZKManager();
 			scan = new Scanner(System.in);
@@ -117,12 +118,10 @@ public class Client {
 					int rand = r.nextInt(possibleParents.size());
 					String group = possibleParents.get(rand);
 					
-					System.out.println(group);
-					
 					String joinSourceChildrenResponse = zoo.joinGroup(group, "client" + id, data, true, false);
 										
 					if (joinSourceChildrenResponse.split(":")[0] != "Full") {
-						path.add(joinGroupResponse);
+						path.add(group);
 						parents ++;
 					}
 					
@@ -138,6 +137,7 @@ public class Client {
 			
 			lastFrame = 0;
 			frames = new ArrayList<>();
+			System.out.println(path.toString());
 
 		} catch (IOException | InterruptedException | KeeperException e) {
 			e.printStackTrace();
@@ -152,7 +152,6 @@ public class Client {
 	
 	private void receivePackets() {
 		try {
-			
 			socket = new DatagramSocket(this.port);
 			while(true) {
 				DatagramPacket rPack = new DatagramPacket(data, data.length);
@@ -218,5 +217,11 @@ public class Client {
 		String numberStg = StringUtils.substringAfterLast(path,("source-"));
 		return Integer.parseInt(numberStg);
 	}
-
+	
+	public void resetTimer() {
+		t.cancel();
+		t = new Timer();
+		VerifyClient v = new VerifyClient(this);
+		t.schedule(v, 5000);
+	}
 }

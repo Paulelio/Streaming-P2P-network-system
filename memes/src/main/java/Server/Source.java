@@ -47,7 +47,6 @@ public class Source {
 			
 			//if not, creates one
 			if(s == null) {
-				
 				zoo.createGroup(SOURCE_FOLDER_PATHNAME, false);
 			}
 			
@@ -62,10 +61,11 @@ public class Source {
 			//creates its own folder for network management
 			this.id = getServiceNumberFromPath(caminho);
 			
-			if(zoo.znode_exists("/"+ SOURCE_NODE_PATHNAME + id, false) == null){	
+			if(zoo.znode_exists("/"+ SOURCE_NODE_PATHNAME + id, false) == null) {	
 				zoo.createGroup(SOURCE_NODE_PATHNAME + id, true);
 			}
-			else{
+			
+			else {
 				resetSource(SOURCE_NODE_PATHNAME + id);
 				zoo.createGroup(SOURCE_NODE_PATHNAME + id, true);
 			}
@@ -83,7 +83,7 @@ public class Source {
 			
 			while(true) {
 				Thread.sleep(50);
-				String msg = "Source Node:"+id+" frame num:"+frame;
+				String msg = "Source Node:" + id + " frame num:" + frame;
 				 byte[] data = msg.getBytes();
 				 DatagramPacket pack = new DatagramPacket(data, data.length);
 				 
