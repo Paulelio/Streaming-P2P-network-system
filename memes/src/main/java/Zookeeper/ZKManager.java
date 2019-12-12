@@ -119,7 +119,7 @@ public class ZKManager {
 
 	public List<String> listGroupChildren(String groupName) throws KeeperException {
 		String path = "/" + groupName;
-		System.out.println(path);
+		
 		try {
 			return zkeeper.getChildren(path, true).stream().sorted((s1,s2) -> s1.compareToIgnoreCase(s2)).collect(Collectors.toList());
 		} catch (InterruptedException e) {

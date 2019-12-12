@@ -77,26 +77,21 @@ public class Client {
 
 			boolean c = true;
 			boolean process = false;
+			boolean firstTime = true;
+			String joinGroupResponse = "";
 
 			while(c) {
 				boolean correct = false;
 
-				if(!process) { //nao esta a receber pacotes
-					System.out.println("Escolha a live que deseja ver: ");
-
-					for (String s : sourceNodes) {
-						System.out.print(s+" ");
-					}
-					System.out.println("");
-				}
-
-
+				if(!process) listChannels(); //nao esta a receber pacotes
+				
 				while(!correct) {
 					if(scan.hasNextInt()) { //se tem um int aka vai querer ver uma live
 						sourceId = scan.nextInt();
 						if (sourceId <= nSources && sourceId > 0) {
 							correct = true; 
-							process = true; //vai processar
+							process = true;//vai processar
+				
 						}
 
 						else {
@@ -112,52 +107,56 @@ public class Client {
 								p.stopThread();
 								correct = true; 
 								process = false;  //vai parar a rececao de pacotes, 
-												 //nao tem de continuar a funcao depois disto
+								firstFrame = true;
 							}
+							break;
 						case "q":
 							c = false; //vai parar completamente
 							correct = true;
 							process = false; //nao tem de continuar a funcao depois disto
-						}
+							break;
+						} 							
 					}
-
-
 				}
+				
 				if(process) {
 					byte[] data = (ip+":"+port).getBytes();
 					String ogPath = "source"+getServiceNumberFromPath(sourceNodes.get(--sourceId));
+					
+					if (firstTime) {
+						firstTime = false;
+						joinGroupResponse = zoo.joinGroup(ogPath, "client" + this.port, data, true, false, false);
+						
+						if (!joinGroupResponse.contains(":")) {
+							path.add(joinGroupResponse);
+						}
 
-					String joinGroupResponse = zoo.joinGroup(ogPath, "client" + this.port, data, true, false, false);
+						else {
+							int parents = 0;
+							List<String> possibleParents = new ArrayList<>();
+							Random r = new Random();
+							String [] sourceChildren = joinGroupResponse.split(":")[1].split(",");
 
-					if (!joinGroupResponse.contains(":")) {
-						path.add(joinGroupResponse);
-					}
+							updateList(sourceChildren, ogPath, possibleParents);
 
-					else {
-						int parents = 0;
-						List<String> possibleParents = new ArrayList<>();
-						Random r = new Random();
-						String [] sourceChildren = joinGroupResponse.split(":")[1].split(",");
+							while (parents < 3) {
+								int rand = r.nextInt(possibleParents.size());
+								String group = possibleParents.get(rand);
 
-						updateList(sourceChildren, ogPath, possibleParents);
+								String joinSourceChildrenResponse = zoo.joinGroup(group, "client" + id, data, true, false, false);
 
-						while (parents < 3) {
-							int rand = r.nextInt(possibleParents.size());
-							String group = possibleParents.get(rand);
+								if (joinSourceChildrenResponse.split(":")[0] != "Full") {
+									path.add(group);
+									parents ++;
+								}
 
-							String joinSourceChildrenResponse = zoo.joinGroup(group, "client" + id, data, true, false, false);
+								else {
+									String[] children = joinSourceChildrenResponse.split(":")[1].split(",");
+									updateList(children, group, possibleParents);
 
-							if (joinSourceChildrenResponse.split(":")[0] != "Full") {
-								path.add(group);
-								parents ++;
+								}
+								possibleParents.remove(rand);
 							}
-
-							else {
-								String[] children = joinSourceChildrenResponse.split(":")[1].split(",");
-								updateList(children, group, possibleParents);
-
-							}
-							possibleParents.remove(rand);
 						}
 					}
 
@@ -170,13 +169,22 @@ public class Client {
 					t.schedule(v, 5000);
 					p = new PacketThread();
 					p.start();
+					
 				}
-
 			}
-
+			
 		} catch (IOException | InterruptedException | KeeperException e) {
 			e.printStackTrace();
 		}
+	}
+	
+	private void listChannels() {
+		System.out.println("Escolha a live que deseja ver: ");
+
+		for (String s : sourceNodes) {
+			System.out.print(s+" ");
+		}
+		System.out.println("");
 	}
 
 	private static void updateList(String[] names, String initial, List<String> update){
@@ -207,11 +215,13 @@ public class Client {
 	}
 
 	class PacketThread extends Thread {
+		
 		boolean parar = false;
 
 		public void run() {
 			try {
 				socket = new DatagramSocket(port);
+				
 				while(!parar) {
 					DatagramPacket rPack = new DatagramPacket(data, data.length);
 					socket.receive(rPack);
@@ -220,6 +230,7 @@ public class Client {
 
 					int currentFrame = Integer.valueOf(msg.split(":")[2]);
 
+					
 					if (firstFrame) {
 						firstFrame = false;
 						System.out.println(msg);					
@@ -242,7 +253,6 @@ public class Client {
 					DatagramPacket sPack = new DatagramPacket(data, data.length);
 
 					if(view != null) {
-						System.out.println(view.toString());
 						for (String child : view) {
 							String[] member = child.split("/");
 							String[] info = member[member.length-1].split(":");
@@ -257,6 +267,7 @@ public class Client {
 						}
 					}
 				}
+				
 
 			} catch (IOException e) {
 				e.printStackTrace();
@@ -265,6 +276,8 @@ public class Client {
 
 		public void stopThread() {
 			parar = true;
+			socket.disconnect();
+			socket.close();
 		}
 	}
 }
