@@ -87,11 +87,22 @@ public class Client {
 				
 				while(!correct) {
 					if(scan.hasNextInt()) { //se tem um int aka vai querer ver uma live
-						sourceId = scan.nextInt();
-						if (sourceId <= nSources && sourceId > 0) {
+						int newchannel = scan.nextInt();
+						
+											
+						if (newchannel <= nSources && newchannel > 0) {
 							correct = true; 
-							process = true;//vai processar
-				
+							process = true; 
+							
+							if (newchannel != sourceId+1) {
+								
+								firstTime = true;
+								for (String p : path) {
+									zoo.reset(p.substring(1));									
+								}	
+								path.clear();
+							}
+							sourceId = newchannel;
 						}
 
 						else {
@@ -99,11 +110,9 @@ public class Client {
 						}
 					}
 					else if(scan.hasNextLine()) {
-						System.out.println("entrou ali");
 						switch(scan.next()) {
 						case "p":
-							if(p instanceof PacketThread && p.isAlive()) {
-								System.out.println("entrou aqui");
+							if(p instanceof PacketThread && p.isAlive()) { 
 								p.stopThread();
 								correct = true; 
 								process = false;  //vai parar a rececao de pacotes, 
@@ -169,7 +178,6 @@ public class Client {
 					t.schedule(v, 5000);
 					p = new PacketThread();
 					p.start();
-					
 				}
 			}
 			
@@ -215,7 +223,6 @@ public class Client {
 	}
 
 	class PacketThread extends Thread {
-		
 		boolean parar = false;
 
 		public void run() {

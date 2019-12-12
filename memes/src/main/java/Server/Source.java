@@ -34,7 +34,7 @@ public class Source {
 		initSourceNode();
 		t = new Timer();
 		VerifyTask v = new VerifyTask(this);
-		t.schedule(v, 5000);
+		t.schedule(v, 1000);
 		broadcastPackets();
 	}
 
@@ -53,7 +53,7 @@ public class Source {
 			
 			this.ip = InetAddress.getLocalHost().getHostAddress();
 			Random rPort = new Random();
-			this.port = rPort.nextInt(400) + 4000;;
+			this.port = rPort.nextInt(400) + 4000;
 			
 			byte[] data = (ip+":"+port).getBytes();
 			
@@ -142,6 +142,6 @@ public class Source {
 		t.cancel();
 		t = new Timer();
 		VerifyTask v = new VerifyTask(this);
-		t.schedule(v, 5000);
+		t.schedule(v, 1000);
 	}
 }

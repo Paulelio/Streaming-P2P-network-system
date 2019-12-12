@@ -135,11 +135,8 @@ public class ZKManager {
 		List<String> children = listGroupChildren(group);
 		
 		if(children != null && children.size() > 0){
-			
 			for (String string : children) {
-				
-				reset(group+"/"+string);
-				
+				reset(group+"/"+string);	
 			}
 		}		
 		deleteGroup(group, false);
