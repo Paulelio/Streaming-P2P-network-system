@@ -302,6 +302,8 @@ public class Client {
 						
 						//espalhar mensagem atraves de gossip
 						String updatedMsg = "c" + port + msg;
+						Random rTime = new Random();
+						Thread.sleep(rTime.nextInt(1000));
 						
 						byte[] data = updatedMsg.getBytes();
 						DatagramPacket sPack = new DatagramPacket(data, data.length);

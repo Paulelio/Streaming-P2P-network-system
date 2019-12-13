@@ -26,7 +26,7 @@ public class ZKManager {
 
 	private void initialize() throws IOException, InterruptedException, KeeperException {
 		zkConnection = new ZKConnection();
-		zkeeper = zkConnection.connect("127.0.0.1");
+		zkeeper = zkConnection.connect("10.101.149.55");
 		
 	}
 
