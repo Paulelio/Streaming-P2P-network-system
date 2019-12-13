@@ -52,8 +52,10 @@ public class Source {
 			}
 			
 			this.ip = InetAddress.getLocalHost().getHostAddress();
-			Random rPort = new Random();
-			this.port = rPort.nextInt(400) + 4000;
+			this.port = Integer.parseInt((String) zoo.getZNodeData("ports", "", null));
+			
+			int new_port = port + 1;
+			zoo.update("/ports", (new_port + "").getBytes(), false);
 			
 			byte[] data = (ip+":"+port).getBytes();
 			

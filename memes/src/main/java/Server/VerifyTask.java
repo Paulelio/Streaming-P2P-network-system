@@ -33,7 +33,6 @@ public class VerifyTask extends TimerTask {
 			
 		} catch (IOException | InterruptedException | KeeperException e) {
 			sc.resetTimer();
-			e.printStackTrace();
 		}
 		
 	}

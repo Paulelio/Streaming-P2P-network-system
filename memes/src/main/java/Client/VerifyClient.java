@@ -42,7 +42,6 @@ public class VerifyClient extends TimerTask {
 			
 		} catch (IOException | InterruptedException | KeeperException e) {
 			client.resetTimer();
-			e.printStackTrace();
 		}
 	}
 }

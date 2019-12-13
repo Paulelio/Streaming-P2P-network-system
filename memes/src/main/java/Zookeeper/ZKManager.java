@@ -26,6 +26,7 @@ public class ZKManager {
 	private void initialize() throws IOException, InterruptedException, KeeperException {
 		zkConnection = new ZKConnection();
 		zkeeper = zkConnection.connect("127.0.0.1");
+		createGroup("ports", ("4000").getBytes());
 	}
 
 	public ZKManager(Watcher watcher) throws IOException, InterruptedException, KeeperException {
@@ -37,14 +38,30 @@ public class ZKManager {
 		zkeeper = zkConnection.connect("127.0.0.1", watcher);
 	}
 
+	private String createGroup(String groupName, byte[] bytes) throws KeeperException, InterruptedException {
+		String path = "/" + groupName;
+
+		Stat status = znode_exists(path, false);
+
+		return status != null ? "" : zkeeper.create(path, bytes, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL);
+		
+	}
+
 	public void closeConnection() throws InterruptedException {
 		zkConnection.close();
 	}
 
 	public Object getZNodeData(String group, String member, Watcher watcher) throws KeeperException, InterruptedException {
-		String path = "/" + group + "/" + member ;
-
+		String path;
+		if(member.compareTo("") == 0) {
+			path = "/" + group;
+		}else {
+			path = "/" + group + "/" + member ;
+		}
+		
+		
 		if(znode_exists(path, true) == null) {
+			System.out.println("memes");
 			return null;
 		}
 		try {

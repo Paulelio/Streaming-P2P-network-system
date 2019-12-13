@@ -6,17 +6,18 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.Scanner;
 import java.util.Timer;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.data.Stat;
 
 import Server.Source;
-import Server.VerifyTask;
 import Zookeeper.ZKManager;
 
 public class Client {
@@ -37,10 +38,12 @@ public class Client {
 	private List<String> sourceNodes;
 	private Scanner scan;
 
-	private boolean firstFrame = true;
 	private int lastFrame;
 	private ArrayList<Integer> frames;
-
+	private Map<String, Integer> parentsLastFrame = new HashMap<String, Integer>() ;
+	
+	int parents = 0;
+	
 	private byte[] data = new byte[256];
 
 	private PacketThread p;
@@ -64,10 +67,11 @@ public class Client {
 				this.ip = InetAddress.getByName(socket.getLocalAddress().getHostAddress());
 			}
 
-			//get port
-			Random rPort = new Random();
-			this.port = rPort.nextInt(400) + 4000;
-
+			this.port = Integer.parseInt((String) zoo.getZNodeData("ports", "", null));
+			
+			int new_port = port + 1;
+			zoo.update("/ports", (new_port + "").getBytes(), false);
+			
 			System.out.println("IP - " + this.ip);
 			System.out.println("Port - " + this.port);
 
@@ -116,7 +120,6 @@ public class Client {
 								p.stopThread();
 								correct = true; 
 								process = false;  //vai parar a rececao de pacotes, 
-								firstFrame = true;
 							}
 							break;
 						case "q":
@@ -141,7 +144,6 @@ public class Client {
 						}
 
 						else {
-							int parents = 0;
 							List<String> possibleParents = new ArrayList<>();
 							Random r = new Random();
 							String [] sourceChildren = joinGroupResponse.split(":")[1].split(",");
@@ -175,18 +177,18 @@ public class Client {
 
 					t = new Timer();
 					VerifyClient v = new VerifyClient(this);
-					t.schedule(v, 5000);
+					t.schedule(v, 1000);
 					p = new PacketThread();
 					p.start();
 				}
-			}
-			
+			}	
 		} catch (IOException | InterruptedException | KeeperException e) {
 			e.printStackTrace();
 		}
 	}
 	
 	private void listChannels() {
+		System.out.println("");
 		System.out.println("Escolha a live que deseja ver: ");
 
 		for (String s : sourceNodes) {
@@ -219,7 +221,7 @@ public class Client {
 		t.cancel();
 		t = new Timer();
 		VerifyClient v = new VerifyClient(this);
-		t.schedule(v, 5000);
+		t.schedule(v, 1000);
 	}
 
 	class PacketThread extends Thread {
@@ -230,52 +232,83 @@ public class Client {
 				socket = new DatagramSocket(port);
 				
 				while(!parar) {
+					//saber id dos nodes pais
+					ArrayList<Integer> parentNodesId = new ArrayList<>();
+					
+					for (String f : path) {
+						String[] fList = f.split("/");
+						parentNodesId.add(Integer.valueOf(fList[fList.length-1].substring(6, 10)));
+					}					
+					
+					//receber mensagem
 					DatagramPacket rPack = new DatagramPacket(data, data.length);
 					socket.receive(rPack);
 
 					String msg = new String(rPack.getData(), 0, rPack.getLength());
-
-					int currentFrame = Integer.valueOf(msg.split(":")[2]);
-
 					
-					if (firstFrame) {
-						firstFrame = false;
-						System.out.println(msg);					
-						lastFrame = currentFrame;					
-					}
+					String messageSource = msg.split(":")[1].split(" ")[0];
+					String sourceNum = sourceNodes.get(sourceId).split("-")[1].replaceFirst("^0+(?!$)", "");
+					int currentFrame = Integer.valueOf(msg.split(":")[2]);
+					
+					if (sourceNum.equals(messageSource)) {
+						if (msg.charAt(0) == '4') { //verifica se msg vem de nos clientes						
+							parentsLastFrame.put(msg.substring(0,4), currentFrame);
+							
+							int maxFrame = Collections.max(parentsLastFrame.values());
+							
+							for (Map.Entry<String, Integer> entry : parentsLastFrame.entrySet()) {
+							    if (entry.getValue() < maxFrame - 9) {
+							     	path.remove(parentNodesId.indexOf(Integer.valueOf(entry.getKey())));
+							    	parentsLastFrame.remove(entry);
+							    }
+							}
+							
+//							parents--; //baixar valor dos parents e detetar no ciclo infinito
+							//verificar qual a maior frame e remover todos aqueles 10 frames abaixo abaixo
+						}
+						
+						
+						if (lastFrame == 0) {
+							System.out.println(msg);					
+							lastFrame = currentFrame;					
+						}
 
-					if (currentFrame == lastFrame+1) {
-						System.out.println(msg);					
-						lastFrame = currentFrame;
-					}
+						if (currentFrame == lastFrame+1) {
+							System.out.println(msg);					
+							lastFrame = currentFrame;
+						}
 
-					if (frames.size() == 5)
-						frames.remove(0);
+						if (frames.size() == 5)
+							frames.remove(0);
 
-					frames.add(currentFrame);
+						frames.add(currentFrame);
 
-					Collections.sort(frames);
+						Collections.sort(frames);
+						
+						//espalhar mensagem atraves de gossip
+						String updatedMsg = port + msg;
+						
+						byte[] data = updatedMsg.getBytes();
+						DatagramPacket sPack = new DatagramPacket(data, data.length);
 
-					byte[] data = msg.getBytes();
-					DatagramPacket sPack = new DatagramPacket(data, data.length);
-
-					if(view != null) {
-						for (String child : view) {
-							String[] member = child.split("/");
-							String[] info = member[member.length-1].split(":");
-							InetAddress add = InetAddress.getByName(info[0]);
-							sPack.setAddress(add);
-							sPack.setPort(Integer.valueOf(info[1]));
-							try {
-								socket.send(sPack);
-							}catch(IOException e) {
-								continue;
+						if(view != null) {
+							for (String child : view) {
+								String[] member = child.split("/");
+								String[] info = member[member.length-1].split(":");
+								
+								InetAddress add = InetAddress.getByName(info[0]);
+								
+								sPack.setAddress(add);
+								sPack.setPort(Integer.valueOf(info[1]));
+								try {
+									socket.send(sPack);
+								}catch(IOException e) {
+									continue;
+								}
 							}
 						}
-					}
+					}					
 				}
-				
-
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
