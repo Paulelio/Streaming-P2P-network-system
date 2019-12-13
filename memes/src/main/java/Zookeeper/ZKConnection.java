@@ -41,7 +41,7 @@ public class ZKConnection {
 	 * @throws InterruptedException
 	 */
 	public ZooKeeper connect(String host, Watcher watcher) throws IOException, InterruptedException {
-		zoo = new ZooKeeper(host,10000,watcher);
+		zoo = new ZooKeeper(host,100000000,watcher);
 		return zoo;
 	}
 

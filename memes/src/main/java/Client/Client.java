@@ -16,17 +16,17 @@ import java.util.Timer;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.ZooKeeper;
 
 import Server.Source;
 import Zookeeper.ZKManager;
 
 public class Client {
 	private List<String> path;
-	private List<String> view;
+	private List<String> view = new ArrayList<>();
 
 	private ZKManager zoo;
 
-	private int id;
 	private int sourceId;
 
 	private InetAddress ip;
@@ -37,6 +37,7 @@ public class Client {
 	private DatagramSocket socket;
 	private List<String> sourceNodes;
 	private Scanner scan;
+	String ogPath;
 
 	private int lastFrame;
 	private ArrayList<Integer> frames;
@@ -59,6 +60,9 @@ public class Client {
 	private void initClientNode() {
 		try {
 			zoo = new ZKManager();
+			
+			while (zoo.getState() != ZooKeeper.States.CONNECTED)
+			
 			scan = new Scanner(System.in);
 
 			//get local address
@@ -67,10 +71,9 @@ public class Client {
 				this.ip = InetAddress.getByName(socket.getLocalAddress().getHostAddress());
 			}
 
-			this.port = Integer.parseInt((String) zoo.getZNodeData("ports", "", null));
+			Random portR = new Random();
 			
-			int new_port = port + 1;
-			zoo.update("/ports", (new_port + "").getBytes(), false);
+			this.port = portR.nextInt(4000) + 2000;
 			
 			System.out.println("IP - " + this.ip);
 			System.out.println("Port - " + this.port);
@@ -131,44 +134,11 @@ public class Client {
 					}
 				}
 				
-				if(process) {
-					byte[] data = (ip+":"+port).getBytes();
-					String ogPath = "source"+getServiceNumberFromPath(sourceNodes.get(--sourceId));
-					
+				if(process) {			
+					ogPath = "source"+getServiceNumberFromPath(sourceNodes.get(--sourceId));
 					if (firstTime) {
 						firstTime = false;
-						joinGroupResponse = zoo.joinGroup(ogPath, "client" + this.port, data, true, false, false);
-						
-						if (!joinGroupResponse.contains(":")) {
-							path.add(joinGroupResponse);
-						}
-
-						else {
-							List<String> possibleParents = new ArrayList<>();
-							Random r = new Random();
-							String [] sourceChildren = joinGroupResponse.split(":")[1].split(",");
-
-							updateList(sourceChildren, ogPath, possibleParents);
-
-							while (parents < 3) {
-								int rand = r.nextInt(possibleParents.size());
-								String group = possibleParents.get(rand);
-
-								String joinSourceChildrenResponse = zoo.joinGroup(group, "client" + id, data, true, false, false);
-
-								if (joinSourceChildrenResponse.split(":")[0] != "Full") {
-									path.add(group);
-									parents ++;
-								}
-
-								else {
-									String[] children = joinSourceChildrenResponse.split(":")[1].split(",");
-									updateList(children, group, possibleParents);
-
-								}
-								possibleParents.remove(rand);
-							}
-						}
+						getNodesParent();
 					}
 
 					lastFrame = 0;
@@ -176,7 +146,7 @@ public class Client {
 					System.out.println(path.toString());
 
 					t = new Timer();
-					VerifyClient v = new VerifyClient(this);
+					VerifyClient v = new VerifyClient(this, this.zoo);
 					t.schedule(v, 1000);
 					p = new PacketThread();
 					p.start();
@@ -208,8 +178,9 @@ public class Client {
 	}
 
 	public void updateClientData(List<String> clientData) {
+		
 		view = new ArrayList<>(clientData);
-
+		
 	}
 
 	public static int getServiceNumberFromPath(String path) {
@@ -220,8 +191,50 @@ public class Client {
 	public void resetTimer() {
 		t.cancel();
 		t = new Timer();
-		VerifyClient v = new VerifyClient(this);
-		t.schedule(v, 1000);
+		VerifyClient v = new VerifyClient(this, this.zoo);
+		t.schedule(v, 3000);
+	}
+	
+	public void getNodesParent() throws KeeperException, InterruptedException {
+		byte[] data = (ip+":"+port).getBytes();
+		
+		String joinGroupResponse = zoo.joinGroup(ogPath, "client" + this.port, data, true, false, false);
+		
+		if (!joinGroupResponse.contains(":")) {
+			path.add(joinGroupResponse);
+		}
+
+		else {
+			List<String> possibleParents = new ArrayList<>();
+			Random r = new Random();
+			String [] sourceChildren = joinGroupResponse.split(":")[1].split(",");
+
+			updateList(sourceChildren, ogPath, possibleParents);
+
+			while (parents < 3) {
+				int rand = r.nextInt(possibleParents.size());
+				String group = possibleParents.get(rand);
+
+				String joinSourceChildrenResponse = zoo.joinGroup(group, "client" + port, data, true, false, false);
+
+				System.out.println(group);
+				System.out.println(path);
+				if (!path.contains(group)) {
+					if (joinSourceChildrenResponse.split(":")[0] != "Full") {
+						path.add(group);
+						parents ++;
+					}
+
+					else {
+						String[] children = joinSourceChildrenResponse.split(":")[1].split(",");
+						updateList(children, group, possibleParents);
+
+					}
+				}
+				
+				possibleParents.remove(rand);
+			}
+		}
 	}
 
 	class PacketThread extends Thread {
@@ -251,19 +264,21 @@ public class Client {
 					int currentFrame = Integer.valueOf(msg.split(":")[2]);
 					
 					if (sourceNum.equals(messageSource)) {
-						if (msg.charAt(0) == '4') { //verifica se msg vem de nos clientes						
-							parentsLastFrame.put(msg.substring(0,4), currentFrame);
+						if (msg.charAt(0) == 'c') { //verifica se msg vem de nos clientes	
+							parentsLastFrame.put(msg.substring(1,5), currentFrame);
 							
 							int maxFrame = Collections.max(parentsLastFrame.values());
 							
 							for (Map.Entry<String, Integer> entry : parentsLastFrame.entrySet()) {
-							    if (entry.getValue() < maxFrame - 9) {
+							    if (entry.getValue() < maxFrame - 19) {
+							    	System.out.println(parentNodesId.toString());
+							    	
 							     	path.remove(parentNodesId.indexOf(Integer.valueOf(entry.getKey())));
 							    	parentsLastFrame.remove(entry);
+							    	parents--; //baixar valor dos parents e detetar no ciclo infinito
+							    	getNodesParent();
 							    }
 							}
-							
-//							parents--; //baixar valor dos parents e detetar no ciclo infinito
 							//verificar qual a maior frame e remover todos aqueles 10 frames abaixo abaixo
 						}
 						
@@ -286,30 +301,36 @@ public class Client {
 						Collections.sort(frames);
 						
 						//espalhar mensagem atraves de gossip
-						String updatedMsg = port + msg;
+						String updatedMsg = "c" + port + msg;
 						
 						byte[] data = updatedMsg.getBytes();
 						DatagramPacket sPack = new DatagramPacket(data, data.length);
 
 						if(view != null) {
-							for (String child : view) {
-								String[] member = child.split("/");
-								String[] info = member[member.length-1].split(":");
-								
-								InetAddress add = InetAddress.getByName(info[0]);
-								
-								sPack.setAddress(add);
-								sPack.setPort(Integer.valueOf(info[1]));
-								try {
-									socket.send(sPack);
-								}catch(IOException e) {
-									continue;
+							synchronized(view) {
+								for (String child : view) {
+									String[] member = child.split("/");
+									String[] info = member[member.length-1].split(":");
+									
+									InetAddress add = InetAddress.getByName(info[0]);
+									
+									sPack.setAddress(add);
+									sPack.setPort(Integer.valueOf(info[1]));
+									try {
+										socket.send(sPack);
+									}catch(IOException e) {
+										continue;
+									}
 								}
 							}
 						}
 					}					
 				}
 			} catch (IOException e) {
+				e.printStackTrace();
+			} catch (KeeperException e) {
+				e.printStackTrace();
+			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
 		}

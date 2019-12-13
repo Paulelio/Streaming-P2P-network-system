@@ -1,6 +1,5 @@
 package Client;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.TimerTask;
@@ -14,20 +13,19 @@ public class VerifyClient extends TimerTask {
 	private Client client;
 	private ZKManager zoo;
 
-	public VerifyClient(Client client) {
+	public VerifyClient(Client client, ZKManager zoo) {
 		this.client = client;
+		this.zoo = zoo;
 	}
 
 	@Override
 	public void run() {
 		try {
-			this.zoo = new ZKManager();
 			List<String> sourceNodeNames = client.getPath();
 			List<String> allClientData = new ArrayList<>();
 			
 			for (String sourceName : sourceNodeNames) {
 				List<String> children = zoo.listGroupChildren(sourceName.substring(1));
-				
 				List<String> clientData = new ArrayList<>();
 				
 				for (String child : children) {
@@ -40,7 +38,7 @@ public class VerifyClient extends TimerTask {
 			client.updateClientData(allClientData);
 			client.resetTimer();
 			
-		} catch (IOException | InterruptedException | KeeperException e) {
+		} catch (InterruptedException | KeeperException e) {
 			client.resetTimer();
 		}
 	}
