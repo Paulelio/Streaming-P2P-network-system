@@ -318,19 +318,26 @@ public class Client {
 
 						if(view != null) {
 							synchronized(view) {
-								for (String child : view) {
-									String[] member = child.split("/");
-									String[] info = member[member.length-1].split(":");
-									
-									InetAddress add = InetAddress.getByName(info[0]);
-									
-									sPack.setAddress(add);
-									sPack.setPort(Integer.valueOf(info[1]));
-									try {
-										socket.send(sPack);
-										messagesSent++;
-									}catch(IOException e) {
-										continue;
+								List<String> copy = view;
+								Collections.shuffle(copy);
+								int i = 0;
+								
+								for (String child : copy) {
+									if(i > (view.size()/2)) {
+										String[] member = child.split("/");
+										String[] info = member[member.length-1].split(":");
+										
+										InetAddress add = InetAddress.getByName(info[0]);
+										
+										sPack.setAddress(add);
+										sPack.setPort(Integer.valueOf(info[1]));
+										try {
+											socket.send(sPack);
+											messagesSent++;
+											i++;
+										}catch(IOException e) {
+											continue;
+										}
 									}
 								}
 							}
