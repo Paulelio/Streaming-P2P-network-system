@@ -31,6 +31,8 @@ public class Source{
 	
 	private Timer t;
 	
+	private int messagesSent;
+	
 	public Source() {
 		initSourceNode();
 		t = new Timer();
@@ -106,6 +108,7 @@ public class Source{
 							pack.setPort(Integer.valueOf(info[1]));
 							try{
 								socket.send(pack);
+								messagesSent++;
 							}
 							catch(IOException e){
 								System.out.println(e);
@@ -151,6 +154,7 @@ public class Source{
 		t = new Timer();
 		VerifyTask v = new VerifyTask(this, this.zoo);
 		t.schedule(v, 2000);
+		System.out.println("Mensagens enviadas: " + messagesSent);
 	}
 
 	

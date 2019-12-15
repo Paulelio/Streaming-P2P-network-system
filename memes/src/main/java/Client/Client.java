@@ -48,6 +48,9 @@ public class Client {
 	private byte[] data = new byte[256];
 
 	private PacketThread p;
+	
+	private int messagesSent;
+	private int messagesReceivedInOrder;
 
 	public Client() {
 		path = new ArrayList<>();
@@ -195,6 +198,8 @@ public class Client {
 		t = new Timer();
 		VerifyClient v = new VerifyClient(this, this.zoo);
 		t.schedule(v, 3000);
+		System.out.println("Mensagens enviadas: " + messagesSent);
+		System.out.println("Mensages recebidas por ordem: " + messagesReceivedInOrder);
 	}
 	
 	public void getNodesParent() throws KeeperException, InterruptedException {
@@ -293,6 +298,7 @@ public class Client {
 						if (currentFrame == lastFrame+1) {
 							System.out.println(msg);					
 							lastFrame = currentFrame;
+							messagesReceivedInOrder++;
 						}
 
 						if (frames.size() == 5)
@@ -322,6 +328,7 @@ public class Client {
 									sPack.setPort(Integer.valueOf(info[1]));
 									try {
 										socket.send(sPack);
+										messagesSent++;
 									}catch(IOException e) {
 										continue;
 									}
@@ -330,11 +337,7 @@ public class Client {
 						}
 					}					
 				}
-			} catch (IOException e) {
-				e.printStackTrace();
-			} catch (KeeperException e) {
-				e.printStackTrace();
-			} catch (InterruptedException e) {
+			} catch (IOException | KeeperException | InterruptedException  e) {
 				e.printStackTrace();
 			}
 		}
