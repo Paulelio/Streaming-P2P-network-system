@@ -61,7 +61,9 @@ public class Client {
 		try {
 			zoo = new ZKManager();
 			
-			while (zoo.getState() != ZooKeeper.States.CONNECTED)
+			while (zoo.getState() != ZooKeeper.States.CONNECTED) {
+				Thread.sleep(1000);
+			}
 			
 			scan = new Scanner(System.in);
 
@@ -147,7 +149,7 @@ public class Client {
 
 					t = new Timer();
 					VerifyClient v = new VerifyClient(this, this.zoo);
-					t.schedule(v, 1000);
+					t.schedule(v, 2000);
 					p = new PacketThread();
 					p.start();
 				}

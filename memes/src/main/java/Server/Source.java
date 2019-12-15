@@ -10,12 +10,13 @@ import java.util.Random;
 import java.util.Timer;
 
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.Stat;
 import org.apache.commons.lang3.StringUtils;
 
 import Zookeeper.ZKManager;
 
-public class Source {
+public class Source{
 	public static final String SOURCE_FOLDER_PATHNAME = "source_folder";
 	public static final String SOURCE_NODE_PATHNAME = "source";
 	
@@ -33,8 +34,8 @@ public class Source {
 	public Source() {
 		initSourceNode();
 		t = new Timer();
-		VerifyTask v = new VerifyTask(this);
-		t.schedule(v, 1000);
+		VerifyTask v = new VerifyTask(this, this.zoo);
+		t.schedule(v, 2000);
 		broadcastPackets();
 	}
 
@@ -43,6 +44,11 @@ public class Source {
 			//creates a Manager instance
 			zoo = new ZKManager();
 			
+			
+			while (zoo.getState() != ZooKeeper.States.CONNECTED) {
+				Thread.sleep(1000);
+			}
+				
 			//checks if the source folder exists
 			Stat s = zoo.znode_exists("/" + SOURCE_FOLDER_PATHNAME, false);
 			
@@ -143,7 +149,9 @@ public class Source {
 	public void resetTimer() {
 		t.cancel();
 		t = new Timer();
-		VerifyTask v = new VerifyTask(this);
-		t.schedule(v, 1000);
+		VerifyTask v = new VerifyTask(this, this.zoo);
+		t.schedule(v, 2000);
 	}
+
+	
 }

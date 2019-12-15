@@ -13,14 +13,15 @@ public class VerifyTask extends TimerTask {
 	private Source sc;
 	private ZKManager zoo;
 	
-	public VerifyTask(Source source) {
+	public VerifyTask(Source source, ZKManager zoo) {
 		this.sc = source;
+		this.zoo = zoo;
 	}
 
 	@Override
 	public void run() {
 		try {
-			this.zoo = new ZKManager();
+			
 			String sourceNodeName = sc.SOURCE_NODE_PATHNAME+sc.getID();
 			List<String> children = zoo.listGroupChildren(sourceNodeName);
 			List<String> clientData = new ArrayList<>();
@@ -31,7 +32,7 @@ public class VerifyTask extends TimerTask {
 			sc.updateClientData(clientData);
 			sc.resetTimer();
 			
-		} catch (IOException | InterruptedException | KeeperException e) {
+		} catch (InterruptedException | KeeperException e) {
 			sc.resetTimer();
 		}
 		
